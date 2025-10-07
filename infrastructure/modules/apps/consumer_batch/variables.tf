@@ -1,0 +1,10 @@
+variable "env" { type = string }
+variable "namespace" { type = string }
+variable "kafka_bootstrap_servers" { type = string }
+variable "kafka_topic" { type = string }
+variable "image" { type = string }
+variable "db_host" { type = string }
+variable "db_port" { type = string }
+variable "db_name" { type = string }
+variable "db_user" { type = string }
+variable "db_password" { type = string }
