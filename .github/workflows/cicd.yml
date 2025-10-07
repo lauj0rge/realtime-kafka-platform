@@ -37,10 +37,12 @@ jobs:
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.9.8
-            
+
       - name: Deploy
-        working-directory: infrastructure      
-        run: make deploy ENV=$ENV
+	    run: |
+	      cd infrastructure
+	      terraform init -upgrade
+	      terraform apply -auto-approve -var-file="env/${ENV}.tfvars"
 
   test:
     runs-on: ubuntu-latest
