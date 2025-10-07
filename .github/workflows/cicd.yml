@@ -39,10 +39,10 @@ jobs:
           terraform_version: 1.9.8
 
       - name: Deploy
-	    run: |
-	      cd infrastructure
-	      terraform init -upgrade
-	      terraform apply -auto-approve -var-file="env/${ENV}.tfvars"
+        run: |
+          cd infrastructure
+          terraform init -upgrade
+          terraform apply -auto-approve -var-file="env/${ENV}.tfvars"
 
   test:
     runs-on: ubuntu-latest
