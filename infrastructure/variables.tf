@@ -33,10 +33,5 @@ variable "producer_replicas" {type = string}
 # Streaming consumer
 variable "app_namespace" { type = string }
 variable "stream_consumer_image" { type = string }
-variable "batch_consumer_image" { type = string }  # ← Add this
+variable "batch_consumer_image" { type = string }  
 
-variable "postgres_password" {
-  type      = string
-  sensitive = true
-  default = "postgres"
-}

@@ -4,7 +4,7 @@ module "postgres" {
   namespace         = var.postgres_namespace
   release_name      = var.postgres_release_name
   chart_version     = var.postgres_chart_version
-  postgres_password = var.postgres_password
+  postgres_password = "postgres"
 }
 
 module "kafka_cluster" {
@@ -54,7 +54,7 @@ module "stream_consumer" {
   db_port                 = "5432"
   db_name                 = module.postgres.db_name
   db_user                 = module.postgres.db_user
-  db_password             = module.postgres.db_password
+  db_password             = "postgres"
   depends_on              = [module.postgres, module.producer]
 }
 
@@ -69,6 +69,6 @@ module "batch_consumer" {
   db_port                 = "5432"
   db_name                 = module.postgres.db_name
   db_user                 = module.postgres.db_user
-  db_password             = module.postgres.db_password
+  db_password             = "postgres"
   depends_on              = [module.postgres, module.producer]
 }
