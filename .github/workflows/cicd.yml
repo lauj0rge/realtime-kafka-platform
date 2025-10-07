@@ -15,19 +15,14 @@ on:
         options:
         - dev
         - prod
-      run_tests:
-        description: 'Run full test suite'
-        required: false
-        default: true
-        type: boolean
 
 jobs:
-  deploy_dev:
-    if: github.ref == 'refs/heads/dev' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'dev')
+  deploy:
     runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/prod' && 'prod' || 'dev' }}
     env:
-      ENV: dev
-      CLUSTER_NAME: data-platform-dev
+      ENV: ${{ github.ref == 'refs/heads/prod' && 'prod' || 'dev' }}
+      CLUSTER_NAME: data-platform-${{ github.ref == 'refs/heads/prod' && 'prod' || 'dev' }}
 
     steps:
       - name: Checkout code
@@ -64,123 +59,26 @@ jobs:
         run: |
           make wait-for-system ENV=$ENV WAIT_TIME=60
 
-      - name: Run health checks
-        if: github.event.inputs.run_tests != 'false'
+      - name: Run tests
         run: |
-          make test-quick ENV=$ENV
+          make test ENV=$ENV
 
       - name: Upload test results
-        if: always() && github.event.inputs.run_tests != 'false'
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-dev
+          name: test-results-${{ env.ENV }}
           path: tests/
           retention-days: 30
-
-  deploy_prod:
-    if: github.ref == 'refs/heads/prod' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'prod')
-    runs-on: ubuntu-latest
-    environment: prod
-    env:
-      ENV: prod
-      CLUSTER_NAME: data-platform-prod
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Kubernetes cluster
-        run: |
-          curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
-          k3d cluster create $CLUSTER_NAME --wait
-
-      - name: Setup kubectl
-        uses: azure/setup-kubectl@v3
-        with:
-          version: 'v1.28.0'
-
-      - name: Build application images
-        run: |
-          make build ENV=$ENV
-
-      - name: Cache images to k3d
-        run: |
-          make cache ENV=$ENV
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: '1.8.0'
-
-      - name: Terraform plan (dry-run)
-        working-directory: infrastructure
-        run: |
-          terraform plan -var-file="../env/prod.tfvars" -detailed-exitcode
-        continue-on-error: true
-
-      - name: Deploy to production
-        run: |
-          make deploy ENV=$ENV
-
-      - name: Wait for production stabilization
-        run: |
-          make wait-for-system ENV=$ENV WAIT_TIME=120
-
-      - name: Run comprehensive tests
-        if: github.event.inputs.run_tests != 'false'
-        run: |
-          make test-full ENV=$ENV TEST_TIMEOUT=600
-
-      - name: Upload production test results
-        if: always() && github.event.inputs.run_tests != 'false'
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results-prod
-          path: tests/
-          retention-days: 90
-
-  integration_tests:
-    if: github.ref == 'refs/heads/prod' || github.event.inputs.run_tests == 'true'
-    runs-on: ubuntu-latest
-    needs: [deploy_dev, deploy_prod]
-    env:
-      ENV: prod
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download test results
-        uses: actions/download-artifact@v4
-        with:
-          pattern: test-results-*
-          merge-multiple: true
-
-      - name: Display test summary
-        run: |
-          echo "=== Integration Test Summary ==="
-          find tests/ -name "*.md" -exec echo "Test result: {}" \;
-          echo "==============================="
-
-      - name: Check test status
-        run: |
-          if find tests/ -name "*.md" | grep -q .; then
-            echo "Tests completed successfully"
-          else
-            echo "No test results found"
-            exit 1
-          fi
 
   cleanup:
     if: always()
     runs-on: ubuntu-latest
-    needs: [deploy_dev, deploy_prod, integration_tests]
+    needs: [deploy]
 
     steps:
-      - name: Cleanup Kubernetes clusters
+      - name: Cleanup Kubernetes cluster
         run: |
-          k3d cluster delete data-platform-dev --yes || true
-          k3d cluster delete data-platform-prod --yes || true
+          k3d cluster delete data-platform-${{ env.ENV }} --yes || true
 
       - name: Cleanup Docker resources
         run: |
