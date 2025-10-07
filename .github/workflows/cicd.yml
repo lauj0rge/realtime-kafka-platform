@@ -5,81 +5,25 @@ on:
     branches:
       - dev
       - prod
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Environment to deploy'
-        required: true
-        default: 'dev'
-        type: choice
-        options:
-        - dev
-        - prod
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: ${{ github.ref == 'refs/heads/prod' && 'prod' || 'dev' }}
     env:
-      ENV: ${{ github.ref == 'refs/heads/prod' && 'prod' || 'dev' }}
-      CLUSTER_NAME: data-platform-${{ github.ref == 'refs/heads/prod' && 'prod' || 'dev' }}
+      ENV: ${{ github.ref_name }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Kubernetes cluster
-        run: |
-          curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
-          k3d cluster create $CLUSTER_NAME --wait
+      - name: Build
+        run: make build ENV=$ENV
 
-      - name: Setup kubectl
-        uses: azure/setup-kubectl@v3
-        with:
-          version: 'v1.28.0'
+      - name: Deploy
+        run: make deploy ENV=$ENV
 
-      - name: Build application images
-        run: |
-          make build ENV=$ENV
+      - name: Test
+        run: make test ENV=$ENV
 
-      - name: Cache images to k3d
-        run: |
-          make cache ENV=$ENV
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: '1.8.0'
-
-      - name: Deploy infrastructure
-        run: |
-          make deploy ENV=$ENV
-
-      - name: Wait for system stabilization
-        run: |
-          make wait-for-system ENV=$ENV WAIT_TIME=60
-
-      - name: Run tests
-        run: |
-          make test ENV=$ENV
-
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results-${{ env.ENV }}
-          path: tests/
-          retention-days: 30
-
-  cleanup:
-    if: always()
-    runs-on: ubuntu-latest
-    needs: [deploy]
-
-    steps:
-      - name: Cleanup Kubernetes cluster
-        run: |
-          k3d cluster delete data-platform-${{ env.ENV }} --yes || true
-
-      - name: Cleanup Docker resources
-        run: |
-          docker system prune -f
+      - name: Cleanup
+        run: k3d cluster delete data-platform-$ENV --yes
