@@ -28,6 +28,7 @@ jobs:
     needs: build
     env:
       ENV: ${{ github.ref_name }}
+      TF_VAR_postgres_password: ${{ secrets.POSTGRES_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
       
