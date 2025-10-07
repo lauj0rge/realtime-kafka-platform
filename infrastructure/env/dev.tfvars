@@ -1,4 +1,5 @@
 env = "dev"
+postgres_password = "postgres"
 
 # PostgreSQL
 postgres_namespace     = "postgresql"
