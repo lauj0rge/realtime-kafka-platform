@@ -34,3 +34,9 @@ variable "producer_replicas" {type = string}
 variable "app_namespace" { type = string }
 variable "stream_consumer_image" { type = string }
 variable "batch_consumer_image" { type = string }  # ← Add this
+
+variable "postgres_password" {
+  type      = string
+  sensitive = true
+  default = "postgres"
+}
