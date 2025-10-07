@@ -14,12 +14,6 @@ output "db_name" {
   description = "PostgreSQL database name"
 }
 
-output "db_password" {
-  value       = module.postgres.db_password
-  description = "PostgreSQL password (sensitive)"
-  sensitive   = true
-}
-
 # Kafka
 output "kafka_bootstrap_server" {
   description = "Kafka internal bootstrap server address"

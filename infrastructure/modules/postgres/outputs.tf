@@ -14,7 +14,7 @@ output "db_name" {
 }
 
 output "db_password" {
-  description = "PostgreSQL password"
-  value       = var.postgres_password
-  sensitive   = true
+  description = "Postgres password"
+  value       = var.db_password
+
 }

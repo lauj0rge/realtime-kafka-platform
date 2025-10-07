@@ -10,5 +10,5 @@ variable "db_user" { type = string }
 variable "db_password" {
   description = "Database password for stream consumer"
   type        = string
-  sensitive   = true
+
 }

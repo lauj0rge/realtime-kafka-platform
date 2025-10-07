@@ -57,7 +57,7 @@ resource "helm_release" "postgresql" {
 
   set {
     name  = "auth.postgresPassword"
-    value = var.postgres_password
+    value = var.db_password
   }
 
   set {
